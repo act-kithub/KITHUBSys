@@ -2,10 +2,6 @@ FROM python:3.12.9-slim
 
 WORKDIR /app
 
-# set dns
-RUN echo "nameserver 8.8.8.8
-nameserver 8.8.4.4" > /etc/resolv.conf
-
 RUN apt update && \
     apt upgrade -y && \
     apt install -y build-essential git nano curl \
