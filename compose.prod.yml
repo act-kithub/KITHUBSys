@@ -24,9 +24,6 @@ services:
         condition: service_completed_successfully
     networks:
       - db
-    dns:
-      - 8.8.8.8
-      - 8.8.4.4
 
   db:
     image: postgres:16
@@ -59,9 +56,6 @@ services:
         condition: service_healthy
     networks:
       - db
-    dns:
-      - 8.8.8.8
-      - 8.8.4.4
 
 volumes:
   pg_data:
