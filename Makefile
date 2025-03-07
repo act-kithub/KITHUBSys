@@ -55,7 +55,7 @@ poetry\:add:
 	make poetry:lock
 
 poetry\:lock:
-	poetry lock --no-update
+	poetry lock
 
 poetry\:update:
 	poetry update --with $(group)
