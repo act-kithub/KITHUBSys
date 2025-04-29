@@ -51,5 +51,6 @@ bot.load_extension("cogs.RoomAnnounce")
 bot.load_extension("cogs.TechTrainInvite")
 bot.load_extension("cogs.ThreadKeeper")
 bot.load_extension("cogs.ThreadTimeline")
+bot.load_extension("cogs.UserManagement")
 
 bot.run(bot_config.TOKEN)
