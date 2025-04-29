@@ -25,7 +25,11 @@ class UserManagement(commands.Cog):
     ):
         guild = ctx.guild
         async for member in guild.fetch_members():
-            await member.add_roles(role)
+            try:
+                await member.add_roles(role)
+            except Exception as e:
+                self.logger.error(f"メンバーにロールを付与できませんでした: {e}")
+                continue
 
         await ctx.respond(
             f"{role.name}を全てのメンバーに付与しました。", ephemeral=True
