@@ -1,40 +1,88 @@
 ENV ?= "dev"
-POETRY_GROUPS = "discord,db,dev"
+UV_GROUPS = discord db dev
+INCLUDE_DB ?= false
+INCLUDE_REDIS ?= false
 
+# 環境別設定
 ifeq ($(ENV), prod)
-	COMPOSE_YML := compose.prod.yml
+	ENV_MODE := production
+	COMPOSE_PROFILES := prod
+	COMPOSE_ENV_FILES := --env-file ./envs/sentry.env
+else ifeq ($(ENV), stg)
+	ENV_MODE := production
+	COMPOSE_PROFILES := stg
+	COMPOSE_ENV_FILES := 
+else ifeq ($(ENV), test)
+	ENV_MODE := production
+	COMPOSE_PROFILES := test
+	COMPOSE_ENV_FILES := 
 else
-	COMPOSE_YML := compose.dev.yml
+	ENV_MODE := development
+	COMPOSE_PROFILES := dev
+	COMPOSE_ENV_FILES := 
 endif
 
+# プロファイル構築
+PROFILES_LIST := $(COMPOSE_PROFILES)
+ifeq ($(INCLUDE_DB), true)
+	PROFILES_LIST := $(PROFILES_LIST) db
+	# devの場合はdb-devも追加
+	ifeq ($(ENV), prod)
+		PROFILES_LIST := $(PROFILES_LIST) db-prod
+	else ifeq ($(ENV), stg)
+		PROFILES_LIST := $(PROFILES_LIST) db-stg
+	else ifeq ($(ENV), test)
+		PROFILES_LIST := $(PROFILES_LIST) db-test
+	else
+		PROFILES_LIST := $(PROFILES_LIST) db-dev
+	endif
+endif
+ifeq ($(INCLUDE_REDIS), true)
+	PROFILES_LIST := $(PROFILES_LIST) redis
+endif
+
+# profile引数構築
+PROFILE_ARGS := $(foreach profile,$(PROFILES_LIST),--profile $(profile))
+
+# uv group引数構築
+UV_GROUP_ARGS := $(foreach group,$(UV_GROUPS),--group $(group))
+
+# composeコマンド構築
+COMPOSE_CMD := docker compose $(PROFILE_ARGS) $(COMPOSE_ENV_FILES)
+
+# 環境変数
+export ENV_MODE
+export INCLUDE_DB
+export INCLUDE_REDIS
+
 build:
-	docker compose -f $(COMPOSE_YML) build
+	$(COMPOSE_CMD) build
 
 build\:no-cache:
-	docker compose -f $(COMPOSE_YML) build --no-cache
+	$(COMPOSE_CMD) build --no-cache
 
 up:
-	docker compose -f $(COMPOSE_YML) up --build -d
+	$(COMPOSE_CMD) up --build -d
 
 down:
-	docker compose -f $(COMPOSE_YML) down
+	$(COMPOSE_CMD) down
 
 reload:
-	docker compose -f $(COMPOSE_YML) build
-	docker compose -f $(COMPOSE_YML) down
-	docker compose -f $(COMPOSE_YML) up -d
+	$(COMPOSE_CMD) build
+	$(COMPOSE_CMD) down
+	$(COMPOSE_CMD) up -d
 
 reset:
-	docker compose -f $(COMPOSE_YML) down --volumes --remove-orphans --rmi all
+	$(COMPOSE_CMD) down --volumes --remove-orphans --rmi all
 
 logs:
-	docker compose -f $(COMPOSE_YML) logs -f
+	$(COMPOSE_CMD) logs -f
 
 logs\:once:
-	docker compose -f $(COMPOSE_YML) logs
+	$(COMPOSE_CMD) logs
 
 ps:
-	docker compose -f $(COMPOSE_YML) ps
+	$(COMPOSE_CMD) ps
 
 pr\:create:
 	git switch develop
@@ -46,38 +94,157 @@ deploy\:prod:
 	make build ENV=prod
 	make reload ENV=prod
 
-poetry\:install:
-	pip install poetry
-	poetry install --with $(group)
+uv\:install:
+	curl -LsSf https://astral.sh/uv/install.sh | sh
 
-poetry\:add:
-	poetry add --group=$(group) $(packages)
-	make poetry:lock
+uv\:add:
+	uv add --group=$(group) $(packages)
+	make uv:lock
 
-poetry\:lock:
-	poetry lock
+uv\:lock:
+	uv lock
 
-poetry\:update:
-	poetry update --with $(group)
+uv\:update:
+	uv lock --upgrade-package $(packages)
 
-poetry\:reset:
-	poetry env remove $(which python)
-	poetry install
+uv\:update\:all:
+	uv lock --upgrade
+
+uv\:sync:
+	uv sync --group $(group)
 
 dev\:setup:
-	poetry install --with $(POETRY_GROUPS)
+	uv sync $(UV_GROUP_ARGS)
+
+lint:
+	uv run ruff check .
+
+lint\:fix:
+	uv run ruff check --fix .
+
+format:
+	uv run ruff format .
+
+security\:scan:
+	make security:scan:code
+	make security:scan:sast
+
+security\:scan\:code:
+	uv run bandit -r app/ -x tests/,app/db/dump.py
+
+security\:scan\:sast:
+	uv run semgrep scan --config=p/python --config=p/security-audit --config=p/owasp-top-ten
 
 db\:revision\:create:
-	docker compose -f $(COMPOSE_YML) build db-migrator
-	docker compose -f $(COMPOSE_YML) run --rm db-migrator /bin/bash -c "alembic revision --autogenerate -m '${NAME}'"
+	$(COMPOSE_CMD) build db-migrator
+	$(COMPOSE_CMD) run --rm db-migrator custom alembic revision --autogenerate -m '${NAME}'
 
 db\:migrate:
-	docker compose -f $(COMPOSE_YML) build db-migrator
-	docker compose -f $(COMPOSE_YML) run --rm db-migrator /bin/bash -c "alembic upgrade head"
+	$(COMPOSE_CMD) build db-migrator
+	$(COMPOSE_CMD) run --rm db-migrator custom alembic upgrade head
+
+db\:downgrade:
+	$(COMPOSE_CMD) build db-migrator
+	$(COMPOSE_CMD) run --rm db-migrator custom alembic downgrade $(REV)
+
+db\:current:
+	$(COMPOSE_CMD) build db-migrator
+	$(COMPOSE_CMD) run --rm db-migrator custom alembic current
+
+db\:history:
+	$(COMPOSE_CMD) build db-migrator
+	$(COMPOSE_CMD) run --rm db-migrator custom alembic history
+
+# データベースダンプ関連コマンド
+db\:dump:
+	$(COMPOSE_CMD) build
+	$(COMPOSE_CMD) run --rm --build -e DB_TOOL_MODE=dumper -e DUMPER_MODE=interactive db-dumper custom python dump.py
+
+db\:dump\:oneshot:
+	$(COMPOSE_CMD) build
+	$(COMPOSE_CMD) run --rm db-dumper custom python dump.py oneshot
+
+db\:dump\:list:
+	$(COMPOSE_CMD) build
+	$(COMPOSE_CMD) run --rm db-dumper custom python dump.py list
+
+db\:dump\:restore:
+	$(COMPOSE_CMD) build
+	$(COMPOSE_CMD) run --rm db-dumper custom python dump.py restore $(FILE)
+
+db\:dump\:test:
+	@if [ "$(INCLUDE_DB)" != "true" ]; then \
+		echo "Skipping database dump test: INCLUDE_DB is not set to true"; \
+	else \
+		$(COMPOSE_CMD) build; \
+		$(COMPOSE_CMD) run --rm db-dumper custom python dump.py test --confirm; \
+	fi
+
+db\:backup\:test: # 後方互換性のためにエイリアスを提供
+	make db:dump:test
 
 envs\:setup:
 	cp envs/discord.env.example envs/discord.env
 	cp envs/db.env.example envs/db.env
 	cp envs/sentry.env.example envs/sentry.env
+	cp envs/aws-s3.env.example envs/aws-s3.env
 
-PHONY: build up down logs ps pr\:create deploy\:prod poetry\:install poetry\:add poetry\:lock poetry\:update poetry\:reset dev\:setup db\:revision\:create db\:migrate envs\:init
+project\:init:
+	@if [ -z "$(NAME)" ]; then \
+		echo "Error: NAME is required"; \
+		echo "Usage: make project:init NAME=\"Your Project Name\""; \
+		exit 1; \
+	fi
+	@UNIX_NAME=$$(echo "$(NAME)" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g' | sed -E 's/^-|-$$//g'); \
+	echo "Initializing project with name: $(NAME) (unix name: $$UNIX_NAME)"; \
+	find . -type f -not -path "*/\.*" -not -path "*/Makefile" -not -path "*/__pycache__/*" -not -path "*/node_modules/*" -not -path "*/venv/*" -exec grep -l "pycord-template" {} \; | xargs -I{} sed -i '' 's/pycord-template/'$$UNIX_NAME'/g' {}; \
+	find . -type f -not -path "*/\.*" -not -path "*/Makefile" -not -path "*/__pycache__/*" -not -path "*/node_modules/*" -not -path "*/venv/*" -exec grep -l "Pycord Template" {} \; | xargs -I{} sed -i '' 's/Pycord Template/$(NAME)/g' {}
+
+	git add .
+	git commit -m "chore: initialize project with name: $(NAME)"
+	git switch -c develop
+
+# テンプレート更新関連コマンド
+template\:list:
+	@if ! git remote | grep -q "template"; then \
+		git remote add template git@github.com:ukwhatn/pycord-template.git; \
+		echo "Added template remote"; \
+	fi
+	git fetch template
+	@echo "テンプレートの最新コミット一覧："
+	git log template/main -n 10 --oneline
+
+template\:apply:
+	@echo "適用したいコミットのハッシュを入力してください（複数の場合はスペース区切り）："
+	@read commit_hashes; \
+	for hash in $$commit_hashes; do \
+		git cherry-pick -X theirs $$hash || { \
+			echo "自動マージできないコンフリクトが発生しました。手動で解決してください。"; \
+			echo "解決後、git cherry-pick --continue を実行してください。"; \
+			exit 1; \
+		}; \
+	done
+
+template\:apply\:range:
+	@echo "開始コミットハッシュを入力してください（古い方）："
+	@read start_hash; \
+	echo "終了コミットハッシュを入力してください（新しい方）："; \
+	read end_hash; \
+	git cherry-pick -X theirs $$start_hash^..$$end_hash || { \
+		echo "自動マージできないコンフリクトが発生しました。手動で解決してください。"; \
+		echo "解決後、git cherry-pick --continue を実行してください。"; \
+		exit 1; \
+	}
+
+template\:apply\:force:
+	@if ! git remote | grep -q "template"; then \
+		git remote add template git@github.com:ukwhatn/pycord-template.git; \
+		echo "Added template remote"; \
+	fi
+	git fetch template
+	@echo "適用したいコミットのハッシュを入力してください："
+	@read commit_hash; \
+	git checkout $$commit_hash -- . && \
+	echo "テンプレートの変更が強制的に適用されました。変更を確認しgit add/commitしてください。"
+
+.PHONY: build up down logs ps pr\:create deploy\:prod uv\:install uv\:add uv\:lock uv\:update uv\:update\:all uv\:sync dev\:setup lint lint\:fix format security\:scan security\:scan\:code security\:scan\:sast test test\:cov test\:setup db\:revision\:create db\:migrate db\:downgrade db\:current db\:history db\:dump db\:backup\:test db\:dump\:oneshot db\:dump\:list db\:dump\:restore db\:dump\:test envs\:setup project\:init template\:list template\:apply template\:apply\:range template\:apply\:force

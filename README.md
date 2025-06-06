@@ -1,82 +1,128 @@
-# KITHUBSys
+# py-cord DiscordBot テンプレート
 
-## これは何？
+[py-cord](https://github.com/Pycord-Development/pycord)を使用したDiscordBot開発用テンプレート。
 
-Discordサーバ管理用Botシステム
+## ✨ 機能
 
-## 開発
+- **🔧 モジュラーアーキテクチャ**: 自動Cogローディングシステムによる整理されたコマンド構造
+- **🗄️ データベース統合**: SQLAlchemy、PostgreSQL、Redis対応、マイグレーション管理
+- **🐳 Docker対応**: Docker Composeによる完全なコンテナ化
+- **⚡ 高速開発**: ホットリロード、自動フォーマット、包括的なツール群
+- **🔒 セキュリティ重視**: BanditとSemgrepによる組み込みセキュリティスキャン
+- **📊 監視機能**: Sentry統合によるエラートラッキングとシステム監視
+- **🧪 コード品質**: Ruffによる自動リント、フォーマット、型チェック
 
-### 開発環境
+## 🚀 クイックスタート
 
-- **python**
-    - 3.10以降
-    - 動作には必要ないが、開発時にあったほうがサジェストとか出るので良い
-- **Docker**
-    - Docker Composeを利用
+### 1. ボットを作成
 
-### 環境構築
+1. このテンプレートを使用して新しいリポジトリを作成
+2. リポジトリをクローン:
+   ```bash
+   git clone https://github.com/yourusername/your-bot-name.git
+   cd your-bot-name
+   ```
 
-```shell
-1. リポジトリをcloneする
+### 2. 環境セットアップ
 
-git clone git@github.com:act-kithub/KITHUBSys.git
+```bash
+# 環境ファイルをセットアップ
+make envs:setup
 
-2. プロジェクトディレクトリに移動する
+# 依存関係をインストール
+make dev:setup
 
-cd KITHUBSys
-
-3. poetryをインストールする
-
-pip install poetry
-
-4. poetryで依存関係をインストールする
-
-make poetry:dev:setup
-
-5. poetry環境に入る
-
-make poetry:shell
-
-6. envファイルをコピーする
-
-make envs:init
-
-7. discord.envにDiscordのBotトークンを設定する
-
-nano envs/discord.env
-
-8. 立ち上げる
-
-make up
+# discord.envでボットトークンを設定
+# 必要に応じて他の環境ファイルも編集
 ```
 
-> [!NOTE]
-> ソースの編集は`discord`ディレクトリをルートとしてVSCodeやIDEで開いたほうが楽です
-> （ローカルパッケージの名前解決ができません）
-> 
-> また、discordディレクトリ内にある `pyproject.toml`や `poetry.lock`、 `db`ディレクトリは
-> すべてプロジェクトルートにある同名ファイル・ディレクトリのシンボリックリンクです
+### 3. ボットを実行
 
-
-### 開発に必要そうなコマンド
-
-```shell
-> docker composeコマンドを直接叩くときは、
-> docker compose -f compose.dev.yml ~~ で
-> compose.dev.ymlを指定する
-
-- dockerコンテナを立ち上げ直す
-make reload
-
-- Pythonパッケージを追加
-make poetry:add group=discord packages="xxx yyy zzz"
-※ dbの依存関係に入れたい場合は group=db
-
-- DBのマイグレーションファイルを生成
-make db:revision:create NAME="add_column_to_table"
-※ db/packages/models.py の編集後に実施
-
-- DBのマイグレーションを実行
-make db:migrate
+**ローカル開発:**
+```bash
+cd app && python main.py
 ```
 
+**Docker使用（推奨）:**
+```bash
+# データベースとRedisと一緒にボットを起動（不要ならfalseにする）
+make up INCLUDE_DB=true INCLUDE_REDIS=true
+```
+
+ボットが起動しました！ 🎉
+
+## 📚 ドキュメント
+
+- **[開発ガイド](development.md)** - 機能構築、コマンド追加、データベース操作の完全ガイド
+- **[クイックリファレンス](#クイックリファレンス)** - 開発に必要なコマンド一覧
+
+## 🏗️ アーキテクチャ概要
+
+```
+app/
+├── main.py              # エントリーポイント
+├── cogs/                # cog（モジュール）群
+├── core/config.py       # configの管理
+├── db/                  # データベース層（モデル、スキーマ、CRUD）
+└── utils/               # ユーティリティ関数とヘルパー
+```
+
+**主要機能:**
+- **自動Cogローディング**: `cogs/`にPythonファイルを配置するだけで自動ロード
+- **データベース層**: モデル、スキーマ、CRUD操作のクリーンな分離
+- **設定システム**: Pydanticバリデーション付き環境ベース設定
+- **エラーハンドリング**: 包括的なエラートラッキングとユーザーフレンドリーな応答
+
+## 🛠️ 使用技術
+
+- **[py-cord](https://github.com/Pycord-Development/pycord)** - モダンなDiscord APIラッパー
+- **[SQLAlchemy](https://sqlalchemy.org/)** - マイグレーション対応データベースORM
+- **[Pydantic](https://pydantic.dev/)** - データバリデーションと設定管理
+- **[uv](https://github.com/astral-sh/uv)** - Pythonパッケージ管理
+- **[Ruff](https://github.com/astral-sh/ruff)** - 超高速リントとフォーマット
+
+## クイックリファレンス
+
+### 必須コマンド
+
+```bash
+# 開発
+make dev:setup          # 全依存関係をインストール
+make envs:setup         # テンプレートから環境ファイルを作成
+
+# コード品質
+make format            # Ruffでコードをフォーマット
+make lint              # コード品質をチェック
+make security:scan     # セキュリティ分析を実行
+
+# Docker操作
+make up                # ボットコンテナを起動
+make up INCLUDE_DB=true # データベース付きで起動
+make logs              # コンテナログを表示
+make down              # 全コンテナを停止
+
+# データベース
+make db:migrate        # データベースマイグレーションを適用
+make db:revision:create NAME="説明" # 新しいマイグレーションを作成
+```
+
+### 機能追加
+
+1. **Cogを作成**: `app/cogs/template.py`を`app/cogs/your_feature.py`にコピー
+2. **コマンド追加**: Discordスラッシュコマンドには`@slash_command`デコレータを使用
+3. **データベースモデル**: `app/db/models/`で自動リレーションハンドリング付きで定義
+4. **テスト**: 開発中は`/reload your_feature`でホットリロード
+
+各側面の詳細なチュートリアルは[開発ガイド](development.md)を参照してください。
+
+## 🤝 コントリビューション
+
+1. リポジトリをフォーク
+2. 機能ブランチを作成
+3. 変更を加える
+4. テストとリントを実行: `make lint && make security:scan`
+5. プルリクエストを送信
+
+## 📄 ライセンス
+
+このテンプレートはオープンソースで、[MITライセンス](LICENSE)の下で利用可能です。
