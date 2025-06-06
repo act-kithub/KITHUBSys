@@ -1,0 +1,149 @@
+services:
+  app:
+    container_name: pycord-template-app
+    build:
+      context: .
+      dockerfile: docker/app.Dockerfile
+    command:
+      - /bin/sh
+      - -c
+      - |
+        python main.py
+    volumes:
+      - ./app:/usr/src/app
+    env_file:
+      - ./envs/db.env
+      - ./envs/discord.env
+    environment:
+      - ENV_MODE=${ENV_MODE:-development}
+      - INCLUDE_DB=${INCLUDE_DB:-false}
+      - INCLUDE_REDIS=${INCLUDE_REDIS:-false}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "[ -f /tmp/bot_status.txt ] && grep -q 'ready' /tmp/bot_status.txt && [ $(date +%s) -lt $(($(cut -d':' -f2 /tmp/bot_status.txt) + 60)) ] || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      db:
+        condition: service_healthy
+        required: false
+      redis:
+        condition: service_healthy
+        required: false
+      db-migrator:
+        condition: service_completed_successfully
+        required: false
+    networks:
+      - db
+      - redis
+    profiles:
+      - dev
+      - stg
+      - test
+      - prod
+
+  db:
+    container_name: pycord-template-db
+    image: postgres:17
+    env_file:
+      - ./envs/db.env
+    environment:
+      POSTGRES_DB: main
+      TZ: Asia/Tokyo
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: pg_isready -U user -d main
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    networks:
+      - db
+    profiles:
+      - db
+
+  redis:
+    container_name: pycord-template-redis
+    image: redis:7.4.1
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: redis-cli ping
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    networks:
+      - redis
+    profiles:
+      - redis
+
+  db-migrator:
+    container_name: pycord-template-db-migrator
+    image: ghcr.io/ukwhatn/psql-migrator:latest
+    volumes:
+      - ./versions:/app/versions
+      - ./app/db/models:/app/migrations/models
+    env_file:
+      - ./envs/db.env
+    environment:
+      - POSTGRES_HOST=db
+    restart: no
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - db
+    profiles:
+      - db
+
+  adminer:
+    container_name: pycord-template-adminer
+    image: adminer:latest
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+      ADMINER_DESIGN: pepa-linha
+    ports:
+      - "127.0.0.1:8001:8080"
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      db-migrator:
+        condition: service_completed_successfully
+    networks:
+      - db
+    profiles:
+      - db-dev
+
+  db-dumper:
+    container_name: pycord-template-db-dumper
+    image: ghcr.io/ukwhatn/psql-dumper:latest
+    env_file:
+      - ./envs/db.env
+      - ./envs/sentry.env
+      - ./envs/aws-s3.env
+    environment:
+      - POSTGRES_HOST=db
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - db
+    profiles:
+      - db-prod
+      - db-stg
+      - db-test
+
+volumes:
+  pg_data:
+  redis_data:
+
+networks:
+  db:
+    driver: bridge
+  redis:
+    driver: bridge 
