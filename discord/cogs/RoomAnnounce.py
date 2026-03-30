@@ -19,7 +19,7 @@ class RoomOpenUtility:
 
         if len(in_room_managers) == 0:
             return discord.Embed(
-                title=f"[{datetime.now().strftime('%m/%d')}]ACT126は閉室しました",
+                title=f"[{datetime.now().strftime('%m/%d')}]ACT314は閉室しました",
                 colour=discord.Colour.red(),
                 timestamp=datetime.now()
             )
@@ -33,7 +33,7 @@ class RoomOpenUtility:
             mentions.append(user.mention)
 
         return discord.Embed(
-            title=f"[{datetime.now().strftime('%m/%d')}]ACT126は開室しています",
+            title=f"[{datetime.now().strftime('%m/%d')}]ACT314は開室しています",
             description=f"入室者： {' '.join(mentions)} \n\n閉室予定時間： {max_estimated_close_at.strftime('%H:%M')}",
             colour=discord.Colour.green(),
             timestamp=datetime.now()
@@ -85,7 +85,7 @@ class RoomOpenUtility:
                 message = await channel.fetch_message(message_id)
 
                 await message.edit(embed=embed)
-                await channel.send("ACT126が閉室しました。", delete_after=1.0)
+                await channel.send("ACT314が閉室しました。", delete_after=1.0)
         else:
             await RoomOpenUtility.send_or_update_messages_on_join(client, guild_id)
 
