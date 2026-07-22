@@ -32,7 +32,7 @@ jobs:
         sed -i 's/DISCORD_BOT_TOKEN=""/DISCORD_BOT_TOKEN="${{ secrets.CIBOT_TOKEN }}"/' envs/discord.env
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      uses: docker/setup-buildx-action@v4
 
     - name: Build images (GHA layer cache)
       uses: docker/bake-action@v7
