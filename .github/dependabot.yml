@@ -36,6 +36,10 @@ updates:
     schedule:
       interval: "daily"
     target-branch: "develop"
+    # pyprojectのpython = "3.12.*" 制約と揃えるため、patch更新のみ許可
+    ignore:
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
     commit-message:
       prefix: "(deps:dockerfile-db)"
     labels:
@@ -51,6 +55,10 @@ updates:
     schedule:
       interval: "daily"
     target-branch: "develop"
+    # pyprojectのpython = "3.12.*" 制約と揃えるため、patch更新のみ許可
+    ignore:
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
     commit-message:
       prefix: "(deps:dockerfile-bot)"
     labels:
