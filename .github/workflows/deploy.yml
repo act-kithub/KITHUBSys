@@ -15,6 +15,7 @@ jobs:
           host: ${{secrets.SSH_HOST}}
           username: ${{secrets.SSH_USER}}
           port: ${{secrets.SSH_PORT}}
+          command_timeout: 30m
           script: |
             cd ${{github.event.repository.name}}
             git pull origin main
