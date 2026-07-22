@@ -16,6 +16,9 @@ build\:no-cache:
 up:
 	docker compose -f $(COMPOSE_YML) up --build -d
 
+up\:ci:
+	docker compose -f $(COMPOSE_YML) up -d --wait --wait-timeout 180
+
 down:
 	docker compose -f $(COMPOSE_YML) down
 
@@ -84,4 +87,4 @@ envs\:setup:
 	cp envs/db.env.example envs/db.env
 	cp envs/sentry.env.example envs/sentry.env
 
-PHONY: build up down logs ps pull pr\:create deploy\:prod poetry\:install poetry\:add poetry\:lock poetry\:update poetry\:reset dev\:setup db\:revision\:create db\:migrate envs\:init
+.PHONY: build up up\:ci down logs ps pull pr\:create deploy\:prod poetry\:install poetry\:add poetry\:lock poetry\:update poetry\:reset dev\:setup db\:revision\:create db\:migrate envs\:init
