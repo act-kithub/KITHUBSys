@@ -1,11 +1,6 @@
 services:
   discord:
-    build:
-      context: .
-      dockerfile: discord/Dockerfile
-    volumes:
-      - ./discord:/app
-      - ./db:/app/db
+    image: ghcr.io/act-kithub/kithubsys/discord:${IMAGE_TAG:-latest}
     env_file:
       - ./envs/discord.env
       - ./envs/db.env
@@ -43,12 +38,8 @@ services:
       - db
 
   db-migrator:
-    build:
-      context: .
-      dockerfile: ./db/Dockerfile
+    image: ghcr.io/act-kithub/kithubsys/db-migrator:${IMAGE_TAG:-latest}
     tty: true
-    volumes:
-      - ./db:/app
     env_file:
       - ./envs/db.env
     depends_on:
