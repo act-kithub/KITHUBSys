@@ -14,4 +14,7 @@ COPY ./db/poetry.lock ./db/pyproject.toml ./db/Makefile /app/
 RUN poetry config virtualenvs.create false
 RUN make poetry:install
 
+# bake application code into the image (dev: volume mountで上書きされる)
+COPY ./db /app
+
 CMD ["/bin/bash", "-c", "alembic upgrade head"]

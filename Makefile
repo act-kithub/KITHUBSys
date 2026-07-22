@@ -42,9 +42,13 @@ pr\:create:
 	gh pr create --base main --head $(shell git branch --show-current)
 	gh pr view --web
 
+pull:
+	docker compose -f $(COMPOSE_YML) pull
+
 deploy\:prod:
-	make build ENV=prod
-	make reload ENV=prod
+	make pull ENV=prod
+	docker compose -f compose.prod.yml down
+	docker compose -f compose.prod.yml up -d
 
 poetry\:install:
 	pip install poetry
@@ -80,4 +84,4 @@ envs\:setup:
 	cp envs/db.env.example envs/db.env
 	cp envs/sentry.env.example envs/sentry.env
 
-PHONY: build up down logs ps pr\:create deploy\:prod poetry\:install poetry\:add poetry\:lock poetry\:update poetry\:reset dev\:setup db\:revision\:create db\:migrate envs\:init
+PHONY: build up down logs ps pull pr\:create deploy\:prod poetry\:install poetry\:add poetry\:lock poetry\:update poetry\:reset dev\:setup db\:revision\:create db\:migrate envs\:init
