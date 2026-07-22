@@ -8,6 +8,8 @@ concurrency:
   cancel-in-progress: false
 jobs:
   build:
+    # pre-releaseではデプロイしない（deployはneedsで連動してskipされる）
+    if: ${{ !github.event.release.prerelease }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -28,6 +30,11 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Sanitize release tag for image tag
+        id: meta
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: echo "release_tag=$(printf '%s' "$RELEASE_TAG" | tr -c 'a-zA-Z0-9_.-' '-')" >> "$GITHUB_OUTPUT"
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
@@ -37,7 +44,7 @@ jobs:
           tags: |
             ghcr.io/act-kithub/kithubsys/${{ matrix.service }}:latest
             ghcr.io/act-kithub/kithubsys/${{ matrix.service }}:${{ github.sha }}
-            ghcr.io/act-kithub/kithubsys/${{ matrix.service }}:${{ github.event.release.tag_name }}
+            ghcr.io/act-kithub/kithubsys/${{ matrix.service }}:${{ steps.meta.outputs.release_tag }}
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
 
@@ -64,6 +71,8 @@ jobs:
             git diff --quiet
             git diff --cached --quiet
             git fetch origin
+            # mainに含まれないcommitのreleaseはデプロイしない
+            git merge-base --is-ancestor ${{ github.sha }} origin/main
             git checkout -B main ${{ github.sha }}
             export IMAGE_TAG=${{ github.sha }}
             make deploy:prod ENV=prod

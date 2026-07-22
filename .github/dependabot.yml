@@ -12,9 +12,9 @@ updates:
       - "automated pr"
     assignees:
       - "ukwhatn"
+    # github-actions/dockerはsemver別cooldown非対応のためdefault-daysのみ
     cooldown:
       default-days: 3
-      semver-patch-days: 1
     groups:
       github-actions-all:
         applies-to: version-updates
@@ -26,10 +26,8 @@ updates:
           - "*"
 
   - package-ecosystem: "pip"
-    directories:
-      - "/"
-      - "/discord"
-      - "/db"
+    # discord/・db/のpyproject/poetry.lockはrootへのsymlinkのため"/"のみで全依存をカバー
+    directory: "/"
     schedule:
       interval: "weekly"
     versioning-strategy: increase-if-necessary
@@ -72,9 +70,9 @@ updates:
       - "automated pr"
     assignees:
       - "ukwhatn"
+    # github-actions/dockerはsemver別cooldown非対応のためdefault-daysのみ
     cooldown:
       default-days: 3
-      semver-patch-days: 1
     groups:
       docker-all:
         applies-to: version-updates
