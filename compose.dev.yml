@@ -1,5 +1,6 @@
 services:
   discord:
+    image: kithubsys-discord:dev
     build:
       context: .
       dockerfile: discord/Dockerfile
@@ -63,6 +64,7 @@ services:
       - db
 
   db-migrator:
+    image: kithubsys-db-migrator:dev
     build:
       context: .
       dockerfile: ./db/Dockerfile
