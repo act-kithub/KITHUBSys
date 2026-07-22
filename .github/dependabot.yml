@@ -36,7 +36,7 @@ updates:
     schedule:
       interval: "daily"
     target-branch: "develop"
-    # pyprojectのpython = "3.12.*" 制約と揃えるため、patch更新のみ許可
+    # pyprojectのpython = "3.12.*" 制約と揃えるため、version updateはpatchのみ許可（security updateはignore対象外）
     ignore:
       - dependency-name: "python"
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
@@ -55,7 +55,7 @@ updates:
     schedule:
       interval: "daily"
     target-branch: "develop"
-    # pyprojectのpython = "3.12.*" 制約と揃えるため、patch更新のみ許可
+    # pyprojectのpython = "3.12.*" 制約と揃えるため、version updateはpatchのみ許可（security updateはignore対象外）
     ignore:
       - dependency-name: "python"
         update-types: ["version-update:semver-major", "version-update:semver-minor"]

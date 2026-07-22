@@ -87,4 +87,4 @@ envs\:setup:
 	cp envs/db.env.example envs/db.env
 	cp envs/sentry.env.example envs/sentry.env
 
-PHONY: build up up\:ci down logs ps pull pr\:create deploy\:prod poetry\:install poetry\:add poetry\:lock poetry\:update poetry\:reset dev\:setup db\:revision\:create db\:migrate envs\:init
+.PHONY: build up up\:ci down logs ps pull pr\:create deploy\:prod poetry\:install poetry\:add poetry\:lock poetry\:update poetry\:reset dev\:setup db\:revision\:create db\:migrate envs\:init
