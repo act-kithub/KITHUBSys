@@ -3,6 +3,9 @@ name: Deploy
 on:
   push:
     branches: [ main ]
+concurrency:
+  group: deploy
+  cancel-in-progress: false
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -53,8 +56,10 @@ jobs:
           port: ${{secrets.SSH_PORT}}
           command_timeout: 30m
           script: |
+            set -e
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            trap 'docker logout ghcr.io' EXIT
             cd ${{github.event.repository.name}}
             git pull origin main
+            export IMAGE_TAG=${{ github.sha }}
             make deploy:prod ENV=prod
-            docker logout ghcr.io

@@ -1,6 +1,6 @@
 services:
   discord:
-    image: ghcr.io/act-kithub/kithubsys/discord:latest
+    image: ghcr.io/act-kithub/kithubsys/discord:${IMAGE_TAG:-latest}
     env_file:
       - ./envs/discord.env
       - ./envs/db.env
@@ -38,7 +38,7 @@ services:
       - db
 
   db-migrator:
-    image: ghcr.io/act-kithub/kithubsys/db-migrator:latest
+    image: ghcr.io/act-kithub/kithubsys/db-migrator:${IMAGE_TAG:-latest}
     tty: true
     env_file:
       - ./envs/db.env
