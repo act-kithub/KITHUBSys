@@ -60,6 +60,7 @@ jobs:
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             trap 'docker logout ghcr.io' EXIT
             cd ${{github.event.repository.name}}
+            git diff --quiet && git diff --cached --quiet
             git fetch origin
             git checkout -B main ${{ github.sha }}
             export IMAGE_TAG=${{ github.sha }}
