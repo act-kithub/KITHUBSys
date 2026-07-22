@@ -1,4 +1,10 @@
 .idea
 .venv
 .git
+.github
+.claude
+.local
 node_modules
+envs
+pgadmin
+**/__pycache__
