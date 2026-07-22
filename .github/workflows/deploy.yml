@@ -1,8 +1,8 @@
 #file: noinspection YAMLSchemaValidation
 name: Deploy
 on:
-  push:
-    branches: [ main ]
+  release:
+    types: [ published ]
 concurrency:
   group: deploy
   cancel-in-progress: false
@@ -37,6 +37,7 @@ jobs:
           tags: |
             ghcr.io/act-kithub/kithubsys/${{ matrix.service }}:latest
             ghcr.io/act-kithub/kithubsys/${{ matrix.service }}:${{ github.sha }}
+            ghcr.io/act-kithub/kithubsys/${{ matrix.service }}:${{ github.event.release.tag_name }}
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
 
