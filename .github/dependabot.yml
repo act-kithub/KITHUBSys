@@ -3,8 +3,8 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "daily"
-    target-branch: "develop"
+      interval: "weekly"
+    open-pull-requests-limit: 5
     commit-message:
       prefix: "(deps:github-actions)"
     labels:
@@ -12,15 +12,28 @@ updates:
       - "automated pr"
     assignees:
       - "ukwhatn"
-    reviewers:
-      - "ukwhatn"
+    cooldown:
+      default-days: 3
+      semver-patch-days: 1
+    groups:
+      github-actions-all:
+        applies-to: version-updates
+        patterns:
+          - "*"
+      github-actions-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
 
   - package-ecosystem: "pip"
-    directory: "/"
+    directories:
+      - "/"
+      - "/discord"
+      - "/db"
     schedule:
-      interval: "daily"
-    target-branch: "develop"
+      interval: "weekly"
     versioning-strategy: increase-if-necessary
+    open-pull-requests-limit: 10
     commit-message:
       prefix: "(deps:pip)"
     labels:
@@ -28,35 +41,46 @@ updates:
       - "automated pr"
     assignees:
       - "ukwhatn"
-    reviewers:
-      - "ukwhatn"
+    cooldown:
+      default-days: 3
+      semver-patch-days: 1
+    groups:
+      pip-all:
+        applies-to: version-updates
+        patterns:
+          - "*"
+      pip-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
 
   - package-ecosystem: "docker"
-    directory: "/db"
+    directories:
+      - "/db"
+      - "/discord"
     schedule:
-      interval: "daily"
-    target-branch: "develop"
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    # pyprojectのpython = "3.12.*" 制約と揃えるため、patch更新のみ許可
+    ignore:
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
     commit-message:
-      prefix: "(deps:dockerfile-db)"
+      prefix: "(deps:docker)"
     labels:
       - "dependencies"
       - "automated pr"
     assignees:
       - "ukwhatn"
-    reviewers:
-      - "ukwhatn"
-
-  - package-ecosystem: "docker"
-    directory: "/discord"
-    schedule:
-      interval: "daily"
-    target-branch: "develop"
-    commit-message:
-      prefix: "(deps:dockerfile-bot)"
-    labels:
-      - "dependencies"
-      - "automated pr"
-    assignees:
-      - "ukwhatn"
-    reviewers:
-      - "ukwhatn"
+    cooldown:
+      default-days: 3
+      semver-patch-days: 1
+    groups:
+      docker-all:
+        applies-to: version-updates
+        patterns:
+          - "*"
+      docker-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
